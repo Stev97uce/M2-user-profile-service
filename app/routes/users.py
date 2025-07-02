@@ -2,8 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.models.user import UserIn, UserOut
 from app.db.mongo import db
 from app.core.security import hash_password, verify_password
+from app.service.log_service import create_log
 import httpx
 from typing import Optional
+from datetime import datetime
 
 router = APIRouter()
 
@@ -37,6 +39,14 @@ async def register(user: UserIn, role_id: Optional[int] = None):
         user_dict["role"] = role
 
     result = await db.users.insert_one(user_dict)
+
+    await create_log({
+        "username": user.username,
+        "action": "register",
+        "timestamp": datetime.utcnow(),
+        "ip_address": request.client.host
+    })
+
     return {"msg": "Usuario registrado exitosamente", "user_id": str(result.inserted_id)}
 
 @router.post("/login", response_model=UserOut)
@@ -44,6 +54,13 @@ async def login(user: UserIn):
     db_user = await db.users.find_one({"username": user.username})
     if not db_user or not verify_password(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    
+    await create_log({
+        "username": user.username,
+        "action": "login",
+        "timestamp": datetime.utcnow(),
+        "ip_address": request.client.host
+    })
 
     db_user["id"] = str(db_user["_id"])
     del db_user["_id"]
