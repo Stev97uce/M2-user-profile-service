@@ -1,11 +1,15 @@
 import httpx
+import os
 from app.models.user import SessionLog
 
 async def create_log(log_data: dict):
     log = SessionLog(**log_data)
+    session_logger_url = os.getenv("SESSION_LOGGER_URL") 
     
-    # Enviar evento a Kafka para registrarlo en session-logger
     async with httpx.AsyncClient() as client:
-        await client.post("http://session-logger:8000/log", json=log.dict())
+        try:
+            await client.post(f"{session_logger_url}/log", json=log.dict())
+        except httpx.RequestError as e:
+            print(f"Error calling session-logger: {e}") 
 
     return log

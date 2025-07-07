@@ -1,8 +1,23 @@
+version: '3.8'
+
 services:
   user-profile-service:
     build: .
     container_name: user-profile-service
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    environment:
+      - MONGO_URI=mongodb://usuario:contraseña@3.222.139.52:27017/lavanet?authSource=admin
+      - DB_NAME=lavanet
+      - SESSION_LOGGER_URL=http://54.159.2.16:8000
+      - ROLES_SERVICE_URL=http://13.216.194.95:8080 
+      - MONGO_URI=mongodb://usuario:contraseña@3.222.139.52:27017/lavanet?authSource=admin
+      - DB_NAME=lavanet
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Elimina servicios innecesarios (como MongoDB local)
